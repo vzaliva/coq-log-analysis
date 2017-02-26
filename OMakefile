@@ -13,8 +13,10 @@ FILES = parselog
 clean:
 	rm -f *.cmo *.cmi parselog *.run *.dot *.pdf
 
+parselog: parselog.ml
+
 samples/refine.dot: parselog OMakefile
-	./parselog -d -x -f samples/refine.txt.out -o samples/refine.dot
+	./parselog -d -f samples/refine.txt.out -o samples/refine.dot
 
 samples/refine.pdf: samples/refine.dot OMakefile
 	dot -Tpdf samples/refine.dot -osamples/refine.pdf

@@ -110,7 +110,7 @@ let gen_entry l n =
     Some { line = n;
            b = seq_of_string bs;
            kind = k;
-           msg = string_of_kind k ; (* TODO *)
+           msg = (if !verbose then string_of_kind k else string_of_kind k) ; (* TODO *)
          }
   else
     None
@@ -122,22 +122,22 @@ let dot_style_of_kind k =
   let errc c x = col (if x then c else "red") in
   match k with
   | Looking        -> sha "parallelogram" ^ col "black"
-  | SimpleApply x  -> sha "ellipse" ^ errc "blue" x
-  | SimpleEapply x -> sha "ellipse" ^ errc "blue" x
-  | External x     -> sha "ellipse" ^ errc "pink" x
+  | SimpleApply x  -> sha "box" ^ errc "blue" x
+  | SimpleEapply x -> sha "box" ^ errc "blue" x
+  | External x     -> sha "box" ^ errc "pink" x
   | NoMatch        -> sha "trapezium" ^ col "red"
   | Exact x        -> sha "polygon" ^ errc "green" x
-  | Goal           -> sha "box" ^ col "yellow"
+  | Goal           -> sha "ellipse" ^ col "yellow"
   | Unknown        -> sha "doublecircle" ^ col "red"
 
 let dot_of_entry {line; b; kind; msg} =
   let bs = string_of_seq b in
-  sprintf "L%d %s [label=\"%s%s\\n%s\"]"
+  sprintf "L%d %s [label=\"%s\\n%s%s\"]"
           line
           (dot_style_of_kind kind)
-          (if !debug then (string_of_int line) ^ ":" else "")
           bs
-          (if !verbose then msg else string_of_kind kind)
+          (if !debug then (string_of_int line) ^ ":" else "")
+          msg
 
 let rec dump_dot oc msibling prev =
   let link a mb = match mb with
@@ -166,11 +166,27 @@ let process_line oc l n =
   match gen_entry l n with
   | Some e ->
      printf "%s\n" (string_of_entry e);
-     (* Pop/process pending entries (if any) *)
-     dump_dot oc (Some e) None;
-     (* now push new entry *)
-     if e.kind != Unknown && e.kind != Goal && (not !nofail || not (is_err e.kind)) then
-       Stack.push e stack;
+     if e.kind != Unknown
+        && e.kind != Goal
+        && (not !nofail || not (is_err e.kind))
+     then
+       if is_err e.kind
+          && not (Stack.is_empty stack)
+          && (Stack.top stack).b =@ e.b
+       then
+         begin
+           (* Fold multiple fail entries into one box *)
+           let p = Stack.pop stack in
+           Stack.push {e with msg = p.msg ^ "\n" ^
+                                      (if !debug then (string_of_int e.line) ^ ":" else "") ^
+                                        e.msg
+                      } stack
+         end
+       else
+         begin
+           dump_dot oc (Some e) None;
+           Stack.push e stack;
+         end
   (* if !debug then printf "\t\tPUSH: %s, stack size %d\n" (string_of_seq e.b) (Stack.length stack) *)
   | None ->
      if !debug && !verbose then printf "Not numbered: %d: %s\n" n l
