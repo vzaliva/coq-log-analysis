@@ -20,6 +20,6 @@ Then process using this script:
 
 This will produce `log.pdf`. You can also generate a file in any dormat supported by `dot(1)`.
 
-You can see sample PDF undrer `samples/samplepdf.pdf`.
+You can see [sample PDF](samples/samplepdf.pdf).
 
 Author: Vadim Zaliva lord@crocodile.org
