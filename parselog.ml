@@ -16,11 +16,11 @@ exception MissingArg of string
 type kind =
   | Goal
   | Looking
-  | SimpleApply of bool
-  | SimpleEapply of bool
-  | External of bool
+  | SimpleApply of (bool*string)
+  | SimpleEapply of (bool*string)
+  | External of (bool*string)
   | NoMatch
-  | Exact of bool
+  | Exact of bool*string
   | Unknown
 
 let ok_fail_of_bool = function
@@ -28,37 +28,47 @@ let ok_fail_of_bool = function
   | false -> "[Fail]"
 
 let string_of_kind = function
-  | Looking        -> "Looking"
-  | SimpleApply x  -> ok_fail_of_bool x ^ "SimpleApply"
-  | SimpleEapply x -> ok_fail_of_bool x ^ "SimpleEapply"
-  | External x     -> ok_fail_of_bool x ^ "External"
-  | NoMatch        -> "NoMatch"
-  | Exact x        -> ok_fail_of_bool x ^ "Exact"
-  | Goal           -> "Goal"
-  | Unknown        -> "???"
+  | Looking            -> "Looking"
+  | SimpleApply (x,n)  -> ok_fail_of_bool x ^ "SimpleApply " ^ n
+  | SimpleEapply (x,n) -> ok_fail_of_bool x ^ "SimpleEapply " ^ n
+  | External (x,n)     -> ok_fail_of_bool x ^ "External " ^ n
+  | NoMatch            -> "NoMatch"
+  | Exact (x,n)        -> ok_fail_of_bool x ^ "Exact " ^ n
+  | Goal               -> "Goal"
+  | Unknown            -> "???"
 
 let is_err = function
   | Looking | NoMatch | Goal | Unknown -> false
-  | SimpleApply x | SimpleEapply x | External x | Exact x  -> not x
+  | SimpleApply (x,_) | SimpleEapply (x,_) | External (x,_) | Exact (x,_)  -> not x
 
 let classifiers = [
-    (regexp "^looking for", Looking) ;
-    (regexp "^simple apply .* failed with", SimpleApply false) ;
-    (regexp "^simple apply", SimpleApply true) ;
-    (regexp "^simple eapply .* failed with", SimpleEapply false) ;
-    (regexp "^simple eapply", SimpleEapply true) ;
-    (regexp "^(\\*external\\*) .* failed with", External false) ;
-    (regexp "^(\\*external\\*)", External true) ;
-    (regexp "^no match for", NoMatch) ;
-    (regexp "^(", Goal) ;
-    (regexp "^exact .* failed with", Exact false) ;
-    (regexp "^exact ", Exact true) ;
+    (regexp "^looking for", fun _ -> Looking) ;
+    (regexp "^simple apply \\([^ ]+\\) .*failed with",
+     fun l -> SimpleApply (false, matched_group 1 l)) ;
+    (regexp "^simple apply \\([^ ]+\\) on",
+     fun l -> SimpleApply (true, matched_group 1 l)) ;
+    (regexp "^simple eapply \\([^ ]+\\) .*failed with",
+     fun l -> SimpleEapply (false, matched_group 1 l)) ;
+    (regexp "^simple eapply \\([^ ]+\\)",
+     fun l -> SimpleEapply (true, matched_group 1 l)) ;
+    (regexp "^(\\*external\\*) \\([^ ]+\\) .*failed with",
+     fun l -> External (false, matched_group 1 l)) ;
+    (regexp "^(\\*external\\*) \\([^ ]+\\) on",
+     fun l -> External (true, matched_group 1 l)) ;
+    (regexp "^no match for",
+     fun _ -> NoMatch) ;
+    (regexp "^(",
+     fun _ -> Goal) ;
+    (regexp "^exact \\([^ ]+\\) .*failed with",
+     fun l -> Exact (false, matched_group 1 l)) ;
+    (regexp "^exact \\([^ ]+\\) on",
+     fun l -> Exact (true,matched_group 1 l)) ;
   ]
 
 let classify l =
   let rec loop = function
     | [] -> Unknown
-    | (r,c)::rs -> if string_match r l 0 then c else loop rs
+    | (r,c)::rs -> if string_match r l 0 then (c l) else loop rs
   in
   loop classifiers
 
@@ -121,14 +131,14 @@ let dot_style_of_kind k =
   let sha s = "[shape=" ^ s ^ "]" in
   let errc c x = col (if x then c else "red") in
   match k with
-  | Looking        -> sha "parallelogram" ^ col "black"
-  | SimpleApply x  -> sha "box" ^ errc "blue" x
-  | SimpleEapply x -> sha "box" ^ errc "blue" x
-  | External x     -> sha "box" ^ errc "pink" x
-  | NoMatch        -> sha "trapezium" ^ col "red"
-  | Exact x        -> sha "polygon" ^ errc "green" x
-  | Goal           -> sha "ellipse" ^ col "yellow"
-  | Unknown        -> sha "doublecircle" ^ col "red"
+  | Looking            -> sha "parallelogram" ^ col "black"
+  | SimpleApply (x,_)  -> sha "box" ^ errc "blue" x
+  | SimpleEapply (x,_) -> sha "box" ^ errc "blue" x
+  | External (x,_)     -> sha "box" ^ errc "pink" x
+  | NoMatch            -> sha "trapezium" ^ col "red"
+  | Exact (x,_)        -> sha "polygon" ^ errc "green" x
+  | Goal               -> sha "ellipse" ^ col "yellow"
+  | Unknown            -> sha "doublecircle" ^ col "red"
 
 let dot_of_entry {line; b; kind; msg} =
   let bs = string_of_seq b in
