@@ -25,7 +25,7 @@ samples/refine.svg: samples/refine.dot OMakefile
 	dot -Tsvg samples/refine.dot -osamples/refine.svg
 
 samples/refine_fail.dot: parselog OMakefile
-	./parselog -d -x -f samples/refine_fail.txt.out -o samples/refine_fail.dot
+	./parselog -d -f samples/refine_fail.txt.out -o samples/refine_fail.dot
 
 samples/refine_fail.pdf: samples/refine_fail.dot OMakefile
 	dot -Tpdf samples/refine_fail.dot -osamples/refine_fail.pdf
