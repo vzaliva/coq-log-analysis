@@ -13,36 +13,36 @@ FILES = parselog
 clean:
 	rm -f *.cmo *.cmi parselog *.run *.dot *.pdf
 
-refine.dot: parselog OMakefile
-	./parselog -d -x -f ../refine.txt.out -o refine.dot
+samples/refine.dot: parselog OMakefile
+	./parselog -d -x -f samples/refine.txt.out -o samples/refine.dot
 
-refine.pdf: refine.dot OMakefile
-	dot -Tpdf refine.dot -orefine.pdf
+samples/refine.pdf: samples/refine.dot OMakefile
+	dot -Tpdf samples/refine.dot -osamples/refine.pdf
 
-refine.svg: refine.dot OMakefile
-	dot -Tsvg refine.dot -orefine.svg
+samples/refine.svg: samples/refine.dot OMakefile
+	dot -Tsvg samples/refine.dot -osamples/refine.svg
 
-refine_fail.dot: parselog OMakefile
-	./parselog -d -x -f ../refine_fail.txt.out -o refine_fail.dot
+samples/refine_fail.dot: parselog OMakefile
+	./parselog -d -x -f samples/refine_fail.txt.out -o samples/refine_fail.dot
 
-refine_fail.pdf: refine_fail.dot OMakefile
-	dot -Tpdf refine_fail.dot -orefine_fail.pdf
+samples/refine_fail.pdf: samples/refine_fail.dot OMakefile
+	dot -Tpdf samples/refine_fail.dot -osamples/refine_fail.pdf
 
-refine_fail.svg: refine_fail.dot OMakefile
-	dot -Tsvg refine_fail.dot -orefine_fail.svg
+samples/refine_fail.svg: samples/refine_fail.dot OMakefile
+	dot -Tsvg samples/refine_fail.dot -osamples/refine_fail.svg
 
 # helpers
-run: refine.pdf
-	xpdf refine.pdf
+run: samples/refine.pdf
+	xpdf samples/refine.pdf
 
-runs: refine.svg
-	geeqie refine.svg
+runs: samples/refine.svg
+	geeqie samples/refine.svg
 
-run1: refine_fail.pdf
-	xpdf refine_fail.pdf
+run1: samples/refine_fail.pdf
+	xpdf samples/refine_fail.pdf
 
-run1s: refine_fail.svg
-	geeqie refine_fail.svg
+run1s: samples/refine_fail.svg
+	geeqie samples/refine_fail.svg
 
 
 
