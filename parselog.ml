@@ -97,7 +97,7 @@ type entry = {
 
 let string_of_entry e =
   sprintf "%d:%s:%s:[%s]" e.line (string_of_seq e.b) (string_of_kind e.kind)
-          (if !verbose then e.msg else "TODO")
+          (if !verbose then e.msg else "")
 
 let stack:(entry Stack.t) = Stack.create ()
 
@@ -136,8 +136,8 @@ let dot_of_entry {line; b; kind; msg} =
           line
           (dot_style_of_kind kind)
           (if !debug then (string_of_int line) ^ ":" else "")
-          (string_of_kind kind)
           bs
+          (if !verbose then msg else string_of_kind kind)
 
 let rec dump_dot oc msibling prev =
   let link a mb = match mb with
