@@ -37,12 +37,22 @@ let string_of_kind = function
   | Goal               -> "Goal"
   | Unknown            -> "???"
 
+let html_of_kind = function
+  | Looking            -> "<b>Looking</b>"
+  | SimpleApply (x,n)  -> ok_fail_of_bool x ^ "<b>SimpleApply</b> <i>" ^ n ^ "</i>"
+  | SimpleEapply (x,n) -> ok_fail_of_bool x ^ "<b>SimpleEapply</b> <i>" ^ n ^ "</i>"
+  | External (x,n)     -> ok_fail_of_bool x ^ "<b>External</b> <i>" ^ n ^ "</i>"
+  | NoMatch            -> "<b>NoMatch</b>"
+  | Exact (x,n)        -> ok_fail_of_bool x ^ "<b>Exact</b> <i>" ^ n ^ "</i>"
+  | Goal               -> "<b>Goal</b>"
+  | Unknown            -> "<b>???</b>"
+
 let is_err = function
   | Looking | NoMatch | Goal | Unknown -> false
   | SimpleApply (x,_) | SimpleEapply (x,_) | External (x,_) | Exact (x,_)  -> not x
 
 let classifiers = [
-    (regexp "^looking for", fun _ -> Looking) ;
+    (regexp "^looking for (\\(.+\\)) with", fun _ -> Looking) ;
     (regexp "^simple apply \\([^ ]+\\) .*failed with",
      fun l -> SimpleApply (false, matched_group 1 l)) ;
     (regexp "^simple apply \\([^ ]+\\) on",
@@ -111,16 +121,32 @@ let string_of_entry e =
 
 let stack:(entry Stack.t) = Stack.create ()
 
+(* Find first (...) expression in string *)
+let find_expr l =
+  let b = find l "(" in
+  let e = rfind l ")" in
+  sub l b (e-b)
+
+let html_expr l =
+  nreplace l "\n" "<br/>"
+
 let gen_entry l n =
-  if string_match debug_regexp l 0 then
-    let bs = matched_group 1 l in
+  let lflat = filter ((!=) '\n') l in
+  if string_match debug_regexp lflat 0 then
+    let bs = matched_group 1 lflat in
     let me = match_end () in
-    let m = string_after l me in
+    let m = string_after lflat me in
     let k = classify m in
     Some { line = n;
            b = seq_of_string bs;
            kind = k;
-           msg = (if !verbose then string_of_kind k else string_of_kind k) ; (* TODO *)
+           msg = (if !verbose then
+                    match k with
+                    | Looking -> "<b>Looking for</b>:<br/><br/><i>"^ (html_expr (find_expr l)) ^"</i>"
+                    | _ -> html_of_kind k
+                  else
+                    string_of_kind k
+                 ) ;
          }
   else
     None
@@ -131,18 +157,18 @@ let dot_style_of_kind k =
   let sha s = "[shape=" ^ s ^ "]" in
   let errc c x = col (if x then c else "red") in
   match k with
-  | Looking            -> sha "parallelogram" ^ col "black"
+  | Looking            -> sha "box" ^ col "black"
   | SimpleApply (x,_)  -> sha "box" ^ errc "blue" x
   | SimpleEapply (x,_) -> sha "box" ^ errc "blue" x
   | External (x,_)     -> sha "box" ^ errc "pink" x
-  | NoMatch            -> sha "trapezium" ^ col "red"
-  | Exact (x,_)        -> sha "polygon" ^ errc "green" x
-  | Goal               -> sha "ellipse" ^ col "yellow"
+  | NoMatch            -> sha "ellipse" ^ col "red"
+  | Exact (x,_)        -> sha "box" ^ errc "green" x
+  | Goal               -> sha "polygon" ^ col "yellow"
   | Unknown            -> sha "doublecircle" ^ col "red"
 
 let dot_of_entry {line; b; kind; msg} =
   let bs = string_of_seq b in
-  sprintf "L%d %s [label=\"%s\\n%s%s\"]"
+  sprintf "L%d %s [label=<%s<br/>%s%s>]"
           line
           (dot_style_of_kind kind)
           bs
@@ -187,7 +213,7 @@ let process_line oc l n =
          begin
            (* Fold multiple fail entries into one box *)
            let p = Stack.pop stack in
-           Stack.push {e with msg = p.msg ^ "\n" ^
+           Stack.push {e with msg = p.msg ^ "<br/>" ^
                                       (if !debug then (string_of_int e.line) ^ ":" else "") ^
                                         e.msg
                       } stack
@@ -212,7 +238,7 @@ let process_file ifilename ofilename =
         loop s current (current+1)
       end
     else
-      loop (m ^ s) start (current+1)
+      loop (m ^ "\n" ^ s) start (current+1)
   in
   try
     fprintf oc "digraph {\n" ;

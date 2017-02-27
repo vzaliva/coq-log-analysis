@@ -10,10 +10,11 @@ FILES = parselog
 
 # I've tried several viewers, and most of them could not handle
 # large PDFs. 'zathura' has minimalistic interface and
-# pretty fast. Keys: 'q' to exit. Arrows to move. +-= to zoom.
-PDFVIEWER = zathura --mode=fullscreen
-# You can also try good old 'xpdf'.
-#PDFVIEWER = xpdf
+# pretty fast but fails to show some files.
+# Keys: 'q' to exit. Arrows to move. +-= to zoom.
+#PDFVIEWER = zathura --mode=fullscreen
+# As a fallback you can always try good old 'xpdf'.
+PDFVIEWER = xpdf
 
 SVGVIEWER = geeqie -t
 
@@ -27,7 +28,7 @@ clean:
 parselog: parselog.ml
 
 samples/refine.dot: parselog OMakefile
-	./parselog -d -f samples/refine.txt.out -o samples/refine.dot
+	./parselog -d -v -f samples/refine.txt.out -o samples/refine.dot
 
 samples/refine.pdf: samples/refine.dot OMakefile
 	dot -Tpdf samples/refine.dot -osamples/refine.pdf
@@ -44,6 +45,9 @@ samples/refine_fail.pdf: samples/refine_fail.dot OMakefile
 samples/refine_fail.svg: samples/refine_fail.dot OMakefile
 	dot -Tsvg samples/refine_fail.dot -osamples/refine_fail.svg
 
+samples/refine.png: samples/refine.svg
+	 inkscape -z -e refine.png refine.svg
+
 samples/refine_fail.png: samples/refine_fail.svg
 	 inkscape -z -e refine_fail.png refine_fail.svg
 
@@ -59,6 +63,9 @@ run1: samples/refine_fail.pdf
 
 run1s: samples/refine_fail.svg
 	$(SVGVIEWER) samples/refine_fail.svg
+
+runp:
+	$(PNGVIEWER) samples/refine.png
 
 run1p:
 	$(PNGVIEWER) samples/refine_fail.png
