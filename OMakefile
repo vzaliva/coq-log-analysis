@@ -9,14 +9,15 @@ OCAMLPACKS[] = batteries
 FILES = parselog
 
 # I've tried several viewers, and most of them could not handle
-# large generated PDFs. 'zathura' has minimalistic interface and
+# large PDFs. 'zathura' has minimalistic interface and
 # pretty fast. Keys: 'q' to exit. Arrows to move. +-= to zoom.
 PDFVIEWER = zathura --mode=fullscreen
 # You can also try good old 'xpdf'.
 #PDFVIEWER = xpdf
 
+SVGVIEWER = geeqie -t
 
-SVGVIEWER = geeqie
+PNGVIEWER = geeqie -t
 
 .PHONY: clean distclean run run1
 
@@ -43,6 +44,9 @@ samples/refine_fail.pdf: samples/refine_fail.dot OMakefile
 samples/refine_fail.svg: samples/refine_fail.dot OMakefile
 	dot -Tsvg samples/refine_fail.dot -osamples/refine_fail.svg
 
+samples/refine_fail.png: samples/refine_fail.svg
+	 inkscape -z -e refine_fail.png refine_fail.svg
+
 # helpers
 run: samples/refine.pdf
 	$(PDFVIEWER) samples/refine.pdf
@@ -56,6 +60,8 @@ run1: samples/refine_fail.pdf
 run1s: samples/refine_fail.svg
 	$(SVGVIEWER) samples/refine_fail.svg
 
+run1p:
+	$(PNGVIEWER) samples/refine_fail.png
 
 
 #Build the program
