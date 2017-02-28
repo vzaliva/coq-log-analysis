@@ -27,22 +27,22 @@ clean:
 
 parselog: parselog.ml
 
-samples/test.dot: parselog OMakefile
+samples/test.dot: parselog OMakefile parselog
 	./parselog -d -v -f samples/test.txt.out -o samples/test.dot
 
 samples/test.pdf: samples/test.dot OMakefile
 	dot -Tpdf samples/test.dot -osamples/test.pdf
 
-samples/refine.dot: parselog OMakefile
+samples/refine.dot: parselog OMakefile parselog
 	./parselog -d -v -f samples/refine.txt.out -o samples/refine.dot
 
-samples/refine.pdf: samples/refine.dot OMakefile
+samples/refine.pdf: samples/refine.dot OMakefile parselog
 	dot -Tpdf samples/refine.dot -osamples/refine.pdf
 
 samples/refine.svg: samples/refine.dot OMakefile
 	dot -Tsvg samples/refine.dot -osamples/refine.svg
 
-samples/refine_fail.dot: parselog OMakefile
+samples/refine_fail.dot: parselog OMakefile parselog
 	./parselog -d -f samples/refine_fail.txt.out -o samples/refine_fail.dot
 
 samples/refine_fail.pdf: samples/refine_fail.dot OMakefile

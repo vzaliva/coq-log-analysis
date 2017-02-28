@@ -1,4 +1,29 @@
 
+
+Require Import Relations Setoid Morphisms.
+
+Parameter Foo: Type.
+Parameter R: relation Foo.
+Parameter bar: Foo -> Foo -> Foo.
+
+Instance R_reflexive: Reflexive R. Admitted.
+Instance R_trasitive: Transitive R. Admitted.
+Instance bar_proper: Proper ((R) ==> (R) ==> (R)) (bar). Admitted.
+
+Example Test (a b c: Foo):
+  R a b -> R (bar c a) (bar c b).
+Proof.
+  intros H.
+  Set Typeclasses Debug Verbosity 2.
+  Set Printing All.
+  Redirect "test.txt"
+           setoid_rewrite H.
+Admitted.
+
+(*
+
+(* With math classes. *)
+
 Require Import MathClasses.interfaces.canonical_names.
 
 Parameter foo: Type.
@@ -24,3 +49,4 @@ Proof.
   Fail Redirect "test.txt"
            setoid_rewrite H.
 Admitted.
+*)
