@@ -18,12 +18,9 @@ Lemma Test
       (H: x=y):
   bar dot x = bar dot y.
 Proof.
-  Set Typeclasses Debug .
+  Set Typeclasses Debug.
   Set Typeclasses Debug Verbosity 2.
   Set Printing All.
-  Set Debug Auto.
-  Set Debug Eauto.
-  Redirect "test.txt"
+  Fail Redirect "test.txt"
            setoid_rewrite H.
-  reflexivity.
-Qed.
+Admitted.
