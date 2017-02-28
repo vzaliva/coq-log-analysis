@@ -127,8 +127,18 @@ let find_expr l =
   let e = rfind l ")" in
   sub l b (e-b)
 
+let rec html_escape s =
+  if is_empty s then ""
+  else
+    (match s.[0] with
+     | '\"' -> "&quot;"
+     | '&' -> "&amp;"
+     | '<' -> "&lt;"
+     | '>' -> "&gt;"
+     | x -> of_char x) ^ html_escape (tail s 1)
+
 let html_expr l =
-  nreplace l "\n" "<br/>"
+  nreplace (html_escape l) "\n" "<br/>"
 
 let gen_entry l n =
   let lflat = filter ((!=) '\n') l in

@@ -20,12 +20,18 @@ SVGVIEWER = geeqie -t
 
 PNGVIEWER = geeqie -t
 
-.PHONY: clean distclean run run1
+.PHONY: clean distclean run run1 runt runs run1s runp run1p
 
 clean:
 	rm -f *.cmo *.cmi parselog *.run *.dot *.pdf
 
 parselog: parselog.ml
+
+samples/test.dot: parselog OMakefile
+	./parselog -d -v -f samples/test.txt.out -o samples/test.dot
+
+samples/test.pdf: samples/test.dot OMakefile
+	dot -Tpdf samples/test.dot -osamples/test.pdf
 
 samples/refine.dot: parselog OMakefile
 	./parselog -d -v -f samples/refine.txt.out -o samples/refine.dot
@@ -69,6 +75,9 @@ runp:
 
 run1p:
 	$(PNGVIEWER) samples/refine_fail.png
+
+runt: samples/test.pdf
+	$(PDFVIEWER) samples/test.pdf
 
 
 #Build the program
