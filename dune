@@ -1,0 +1,8 @@
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
+(executables
+  (names parselog)
+  (libraries core str)
+  (modes native))

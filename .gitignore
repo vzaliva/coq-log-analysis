@@ -1,9 +1,8 @@
-.omakedb
-.omakedb.lock
-*.omc
 *.cmi
 *.cmo
 *.run
 *.dot
 *.annot
 parselog
+/.merlin
+/_build/

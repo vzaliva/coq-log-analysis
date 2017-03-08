@@ -1,12 +1,3 @@
-# Use the byte-code compiler
-BYTE_ENABLED = true
-NATIVE_ENABLED = false
-OCAMLCFLAGS += -g -thread -annot
-
-USE_OCAMLFIND = true
-OCAMLPACKS[] = batteries
-
-FILES = parselog
 
 # I've tried several viewers, and most of them could not handle
 # large PDFs. 'zathura' has minimalistic interface and
@@ -14,41 +5,48 @@ FILES = parselog
 # Keys: 'q' to exit. Arrows to move. +-= to zoom.
 #PDFVIEWER = zathura --mode=fullscreen
 # As a fallback you can always try good old 'xpdf'.
+
+EXE = _build/default/parselog.exe
+
+.PHONY: all clean distclean run run1 runt runs run1s runp run1p
+
+all: $(EXE)
+
+$(EXE):
+	dune build
+
 PDFVIEWER = xpdf
 
 SVGVIEWER = geeqie -t
 
 PNGVIEWER = geeqie -t
 
-.PHONY: clean distclean run run1 runt runs run1s runp run1p
-
 clean:
-	rm -f *.cmo *.cmi parselog *.run *.dot *.pdf
+	dune clean
+	rm -f *.run *.dot *.pdf
 
-parselog: parselog.ml
+samples/test.dot: $(EXE)
+	$(EXE) -d -v -f samples/test.txt.out -o samples/test.dot
 
-samples/test.dot: parselog OMakefile parselog
-	./parselog -d -v -f samples/test.txt.out -o samples/test.dot
-
-samples/test.pdf: samples/test.dot OMakefile
+samples/test.pdf: samples/test.dot 
 	dot -Tpdf samples/test.dot -osamples/test.pdf
 
-samples/refine.dot: parselog OMakefile parselog
-	./parselog -d -v -f samples/refine.txt.out -o samples/refine.dot
+samples/refine.dot: $(EXE)
+	$(EXE) -d -v -f samples/refine.txt.out -o samples/refine.dot
 
-samples/refine.pdf: samples/refine.dot OMakefile parselog
+samples/refine.pdf: samples/refine.dot $(EXE)
 	dot -Tpdf samples/refine.dot -osamples/refine.pdf
 
-samples/refine.svg: samples/refine.dot OMakefile
+samples/refine.svg: samples/refine.dot
 	dot -Tsvg samples/refine.dot -osamples/refine.svg
 
-samples/refine_fail.dot: parselog OMakefile parselog
-	./parselog -d -f samples/refine_fail.txt.out -o samples/refine_fail.dot
+samples/refine_fail.dot: $(EXE) 
+	$(EXE) -d -f samples/refine_fail.txt.out -o samples/refine_fail.dot
 
-samples/refine_fail.pdf: samples/refine_fail.dot OMakefile
+samples/refine_fail.pdf: samples/refine_fail.dot 
 	dot -Tpdf samples/refine_fail.dot -osamples/refine_fail.pdf
 
-samples/refine_fail.svg: samples/refine_fail.dot OMakefile
+samples/refine_fail.svg: samples/refine_fail.dot 
 	dot -Tsvg samples/refine_fail.dot -osamples/refine_fail.svg
 
 samples/refine.png: samples/refine.svg
@@ -80,7 +78,5 @@ runt: samples/test.pdf
 	$(PDFVIEWER) samples/test.pdf
 
 
-#Build the program
-OCamlProgram(parselog, $(FILES))
-.DEFAULT: parselog
+
 

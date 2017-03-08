@@ -1,5 +1,7 @@
 # coq-log-analysis
 
+[![Join the chat at https://gitter.im/coq-log-analysis/Lobby](https://badges.gitter.im/coq-log-analysis/Lobby.svg)](https://gitter.im/coq-log-analysis/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Parse Coq log files and plot resolution trees
 
 This scrpit helps you to visualize Coq proof search trees for teactics
