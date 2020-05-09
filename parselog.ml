@@ -1,4 +1,4 @@
-open Batteries
+open Core
 open String
 open Str
 open Printf
@@ -86,15 +86,13 @@ let classify l =
 
 type seq = int list
 
-let string_of_seq = BatString.join "." %
-                      BatList.map string_of_int
+let string_of_seq l = concat ~sep:"." (List.map ~f:string_of_int l)
 
-let seq_of_string = BatList.map int_of_string %
-                      BatString.split_on_char '.'
+let seq_of_string s = List.map ~f:int_of_string (String.split s ~on:'.')
 
 let rec ( =@ ) a b =
   match a, b with
-  | (x::xs), (y::ys) -> x=y && xs=@ys
+  | (x::xs), (y::ys) -> (Int.(=) x y) && xs=@ys
   | [], [] -> true
   | [], (_::_) -> false
   | (_::_), [] -> false
@@ -102,7 +100,7 @@ let rec ( =@ ) a b =
 (* True if 'h' starts with 'n', but not exactly the same *)
 let rec ( >@ ) h n =
   match h, n with
-  | (h::hs), (n::ns) -> n=h && hs >@ ns
+  | (h::hs), (n::ns) -> (Int.(=) h n) && hs >@ ns
   | [], [] -> false
   | [], (_::_) -> false
   | (_::_), [] -> true
@@ -117,15 +115,15 @@ type entry = {
 
 let string_of_entry e =
   sprintf "%d:%s:%s:[%s]" e.line (string_of_seq e.b) (string_of_kind e.kind)
-          (if !verbose then e.msg else "")
+    (if !verbose then e.msg else "")
 
 let stack:(entry Stack.t) = Stack.create ()
 
 (* Find first (...) expression in string *)
 let find_expr l =
-  let b = find l "(" in
-  let e = rfind l ")" in
-  sub l b (e-b)
+  let b = index_exn l '(' in
+  let e = rindex_exn l ')' in
+  slice l b e
 
 let rec html_escape s =
   if is_empty s then ""
@@ -135,13 +133,15 @@ let rec html_escape s =
      | '&' -> "&amp;"
      | '<' -> "&lt;"
      | '>' -> "&gt;"
-     | x -> of_char x) ^ html_escape (tail s 1)
+     | x -> of_char x) ^ html_escape (String.drop_prefix s 1)
 
 let html_expr l =
-  nreplace (html_escape l) "\n" "<br/>"
+  let open String.Search_pattern in
+  let p = create "\n" in
+  replace_all p ~in_:(html_escape l) ~with_:"<br/>"
 
 let gen_entry l n =
-  let lflat = filter ((!=) '\n') l in
+  let lflat = filter l ~f:(Char.(<>) '\n') in
   if string_match debug_regexp lflat 0 then
     let bs = matched_group 1 lflat in
     let me = match_end () in
@@ -157,7 +157,7 @@ let gen_entry l n =
                   else
                     string_of_kind k
                  ) ;
-         }
+      }
   else
     None
 
@@ -179,11 +179,11 @@ let dot_style_of_kind k =
 let dot_of_entry {line; b; kind; msg} =
   let bs = string_of_seq b in
   sprintf "L%d %s [label=<%s<br/>%s%s>]"
-          line
-          (dot_style_of_kind kind)
-          bs
-          (if !debug then (string_of_int line) ^ ":" else "")
-          msg
+    line
+    (dot_style_of_kind kind)
+    bs
+    (if !debug then (string_of_int line) ^ ":" else "")
+    msg
 
 let rec dump_dot oc msibling prev =
   let link a mb = match mb with
@@ -191,17 +191,17 @@ let rec dump_dot oc msibling prev =
     | None -> ()
   in
   if not (Stack.is_empty stack) then
-    let p = Stack.top stack in
+    let p = Stack.top_exn stack in
     if
       (match msibling with
-       | Some sibling ->  sibling.b >@ p.b
+       | Some sibling -> sibling.b >@ p.b
        | None -> false)
     then
       (* we are at common parent. just link from it *)
       link p prev
     else
       begin
-        let x = Stack.pop stack in
+        let x = Stack.pop_exn stack in
         (* if !debug then printf "\t\tPOP %s\n" (string_of_entry x); *)
         fprintf oc "\t%s;\n" (dot_of_entry x);
         link x prev;
@@ -212,37 +212,37 @@ let process_line oc l n =
   match gen_entry l n with
   | Some e ->
      printf "%s\n" (string_of_entry e);
-     if e.kind != Unknown
-        && e.kind != Goal
+     if not (phys_equal e.kind Unknown)
+        && not (phys_equal e.kind Goal)
         && (not !nofail || not (is_err e.kind))
      then
        if is_err e.kind
           && not (Stack.is_empty stack)
-          && (Stack.top stack).b =@ e.b
+          && (Stack.top_exn stack).b =@ e.b
        then
          begin
            (* Fold multiple fail entries into one box *)
-           let p = Stack.pop stack in
-           Stack.push {e with msg = p.msg ^ "<br/>" ^
+           let p = Stack.pop_exn stack in
+           Stack.push stack {e with msg = p.msg ^ "<br/>" ^
                                       (if !debug then (string_of_int e.line) ^ ":" else "") ^
                                         e.msg
-                      } stack
+             }
          end
        else
          begin
            dump_dot oc (Some e) None;
-           Stack.push e stack;
+           Stack.push stack e;
          end
   (* if !debug then printf "\t\tPUSH: %s, stack size %d\n" (string_of_seq e.b) (Stack.length stack) *)
   | None ->
      if !debug && !verbose then printf "Not numbered: %d: %s\n" n l
 
 let process_file ifilename ofilename =
-  let ic = open_in ifilename in
-  let oc = open_out ofilename in
+  let ic = In_channel.create ifilename in
+  let oc = Out_channel.create ofilename in
   let rec loop m start current =
-    let s = input_line ic in
-    if not (is_empty m) && starts_with s "Debug" then
+    let s = In_channel.input_line_exn ic in
+    if not (is_empty m) && String.is_prefix s ~prefix:"Debug" then
       begin
         process_line oc m start ;
         loop s current (current+1)
@@ -259,8 +259,8 @@ let process_file ifilename ofilename =
       (* TODO: dump remaining stack *)
       dump_dot oc None None ;
       fprintf oc "}\n" ;
-      close_in ic ;
-      close_out oc
+      In_channel.close ic ;
+      Out_channel.close oc
     end
 
 let main =
