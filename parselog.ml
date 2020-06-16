@@ -49,7 +49,12 @@ let html_of_kind = function
 
 let is_err = function
   | Looking | NoMatch | Goal | Unknown -> false
-  | SimpleApply (x,_) | SimpleEapply (x,_) | External (x,_) | Exact (x,_)  -> not x
+  | SimpleApply (x,_) | SimpleEapply (x,_) | External (x,_) | Exact (x,_) -> not x
+
+let is_fail = function
+  | Looking | Goal | Unknown -> false
+  | NoMatch -> true
+  | SimpleApply (x,_) | SimpleEapply (x,_) | External (x,_) | Exact (x,_) -> not x
 
 let classifiers = [
     (regexp "^looking for (\\(.+\\)) with", fun _ -> Looking) ;
@@ -104,6 +109,21 @@ let rec ( >@ ) h n =
   | [], [] -> false
   | [], (_::_) -> false
   | (_::_), [] -> true
+
+(*
+(* True if 'n' starts with 'h' (or exactly the same) *)
+let rec ( <=@ ) h n =
+  match h, n with
+  | (h::hs), (n::ns) -> (Int.(=) h n) && hs <=@ ns
+  | [], [] -> true
+  | [], (_::_) -> true
+  | (_::_), [] -> false
+
+let rec dec_seq = function
+  | [] -> []
+  | (x::[]) -> if (Int.(=) x 1) then [] else [x-1]
+  | (x::xs) -> x::(dec_seq xs)
+ *)
 
 (* Stack of states for DFS *)
 type entry = {
@@ -208,6 +228,32 @@ let rec dump_dot oc msibling prev =
         dump_dot oc msibling (Some p)
       end
 
+(*
+(* this is just modified [dump_dot] - operates the same, but writes nothing *)
+let rec flush_branch msibling prev =
+  let link a mb = match mb with
+    | Some b -> print_endline ("Flushing " ^ (string_of_int a.line) ^ " -> " ^ (string_of_int b.line));
+    | None -> ()
+  in
+  if not (Stack.is_empty stack) then
+    let p = Stack.top_exn stack in
+    if
+      (match msibling with
+       | Some sibling -> sibling.b >@ p.b
+       | None -> false)
+    then
+      (* we are at common parent. just link from it *)
+      link p prev
+    else
+      begin
+        let x = Stack.pop_exn stack in
+        (* if !debug then printf "\t\tPOP %s\n" (string_of_entry x); *)
+        print_endline ("Flushing " ^ (string_of_entry x));
+        link x prev;
+        flush_branch msibling (Some p)
+      end
+ *)
+
 let process_line oc l n =
   match gen_entry l n with
   | Some e ->
@@ -230,13 +276,42 @@ let process_line oc l n =
          end
        else
          begin
-           dump_dot oc (Some e) None;
-           Stack.push stack e;
+           (* if (is_fail e.kind)
+           then flush_branch (Some e) None
+           else *)
+             begin
+               dump_dot oc (Some e) None;
+               Stack.push stack e;
+             end
          end
   (* if !debug then printf "\t\tPUSH: %s, stack size %d\n" (string_of_seq e.b) (Stack.length stack) *)
   | None ->
      if !debug && !verbose then printf "Not numbered: %d: %s\n" n l
 
+(*
+let rec fold_multiline (ic : Pervasives.in_channel) (l : t) (end_line : int) : (t * int * t option) =
+  match In_channel.input_line ic with
+  | Some nl -> if String.is_prefix nl ~prefix:"Debug"
+               then (l, end_line, Some l)
+               else fold_multiline ic (l ^ "\n" ^ nl) (end_line + 1)
+  | None -> (l, end_line, None)
+
+let rec next_entry (ic : Pervasives.in_channel) (l : t) (start_line : int) : (entry * int * t option) option =
+  let (es, end_line, nl) = fold_multiline ic l start_line in
+  match gen_entry es start_line with
+  | Some e -> Some (e, end_line, nl)
+  | None -> match nl with
+            | Some nl -> next_entry ic nl (end_line + 1)
+            | None -> None
+
+let process_entries (e : entry) (ne : entry) : () =
+  begin
+    Stack.push stack e;
+    if not (e.(seq) <=@ ne.(seq))
+    then let common_parent = dec_seq (ne.(seq)) in
+  end
+ *)
+  
 let process_file ifilename ofilename =
   let ic = In_channel.create ifilename in
   let oc = Out_channel.create ofilename in
