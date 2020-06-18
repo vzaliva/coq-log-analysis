@@ -160,14 +160,14 @@ let html_expr l =
   let p = create "\n" in
   replace_all p ~in_:(html_escape l) ~with_:"<br/>"
 
-let gen_entry l n =
+let gen_entry l (* n *) =
   let lflat = filter l ~f:(Char.(<>) '\n') in
   if string_match debug_regexp lflat 0 then
     let bs = matched_group 1 lflat in
     let me = match_end () in
     let m = string_after lflat me in
     let k = classify m in
-    Some { line = n;
+    Some { line = (* n *) 0;
            b = seq_of_string bs;
            kind = k;
            msg = (if !verbose then
@@ -288,28 +288,93 @@ let process_line oc l n =
   | None ->
      if !debug && !verbose then printf "Not numbered: %d: %s\n" n l
 
-(*
-let rec fold_multiline (ic : Pervasives.in_channel) (l : t) (end_line : int) : (t * int * t option) =
-  match In_channel.input_line ic with
+let option_lift f = function
+  | Some a -> f a
+  | None -> None
+
+(* channel with "the next line" read from it *)
+type logfile_stream = {
+    ic : Pervasives.in_channel;
+    line : t
+  }
+
+(* accumulate lines until the start of a new entry is on the next line *)
+let rec fold_multiline (s : logfile_stream) : t * logfile_stream option =
+  match In_channel.input_line s.ic with
   | Some nl -> if String.is_prefix nl ~prefix:"Debug"
-               then (l, end_line, Some l)
-               else fold_multiline ic (l ^ "\n" ^ nl) (end_line + 1)
-  | None -> (l, end_line, None)
+               then (s.line, Some {ic = s.ic; line = nl})
+               else fold_multiline {ic = s.ic; line = s.line ^ "\n" ^ nl}
+  | None ->
+     begin
+       (* EOF reached, close in channel, dispose of stream *)
+       In_channel.close s.ic;
+       (s.line, None)
+     end
 
-let rec next_entry (ic : Pervasives.in_channel) (l : t) (start_line : int) : (entry * int * t option) option =
-  let (es, end_line, nl) = fold_multiline ic l start_line in
-  match gen_entry es start_line with
-  | Some e -> Some (e, end_line, nl)
-  | None -> match nl with
-            | Some nl -> next_entry ic nl (end_line + 1)
-            | None -> None
+type token =
+  | Tactic of seq
+  | Goal of seq
 
-let process_entries (e : entry) (ne : entry) : () =
-  begin
-    Stack.push stack e;
-    if not (e.(seq) <=@ ne.(seq))
-    then let common_parent = dec_seq (ne.(seq)) in
-  end
+let rec gen_token (s : t) =
+  raise (Failure "not implemented")
+
+let rec next_entry (s : logfile_stream) : token option * logfile_stream option =
+  let (es, os') = fold_multiline s in
+  match gen_token es with
+  | Some e -> (Some e, os')
+  | None -> match os' with
+            | Some s' ->
+               begin
+                 print_endline ("Error generating entry from { " ^ es ^ " }. Skipping.");
+                 next_entry s'
+               end
+            | None -> (None, None)
+
+type token_stream = {
+    ls : logfile_stream;
+    ot : token option
+  }
+
+let next_token (s : token_stream) : token option * token_stream =
+  raise (Failure "not implemented")
+
+type tactic =
+  | T_trivial
+  | T_nontrivial of goal list
+and goal =
+  | G_trivial
+  | G_nontrivial of tactic
+
+type trivial_subtree =
+  | Error
+  | TTac of tactic
+  | TGoal of goal
+
+(* check if the goal is resolved immediately, in the same line (e.g. Exact, NoMatch) *)
+let rec try_trivial (t : token) : trivial_subtree option =
+  raise (Failure "not implemented")
+
+(*
+let rec resolve_goal (s : token_stream) : goal option =
+  match next_token s with
+  | (None, _) -> None
+  | (Some g, s') -> match try_trivial g with
+                    | Some Error -> None
+                    | Some (TTac _) -> raise (Failure "expecting goal, encountered complete tactic")
+                    | Some (TGoal tg) -> Some tg
+                    | None -> match (resolve_tactic s') with
+                              | Some rt -> Some (G_nontrivial rt)
+                              | None -> None
+and resolve_tactic (s : token_stream) : tactic option =
+  match next_token s with
+  | (None, _) -> None
+  | (Some t, s') -> match try_trivial t with
+                    | Some Error -> 
+                    | Some (TGoal _) -> raise (Failure "expecting tactic, encountered complete goal")
+                    | Some (TTac tt) -> Some tt
+                    | None -> match (resolve_goal s') with
+                              | Some rt -> Some (T_nontrivial rt)
+                              | None -> None
  *)
   
 let process_file ifilename ofilename =
