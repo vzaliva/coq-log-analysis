@@ -160,14 +160,14 @@ let html_expr l =
   let p = create "\n" in
   replace_all p ~in_:(html_escape l) ~with_:"<br/>"
 
-let gen_entry l (* n *) =
+let gen_entry l n =
   let lflat = filter l ~f:(Char.(<>) '\n') in
   if string_match debug_regexp lflat 0 then
     let bs = matched_group 1 lflat in
     let me = match_end () in
     let m = string_after lflat me in
     let k = classify m in
-    Some { line = (* n *) 0;
+    Some { line = n;
            b = seq_of_string bs;
            kind = k;
            msg = (if !verbose then
