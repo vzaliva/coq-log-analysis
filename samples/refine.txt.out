@@ -1,0 +1,32 @@
+Debug: 1: looking for (Proper (equiv ==> ?r) f1) with backtracking
+Debug: 1.1: simple apply @proper1 on (Proper (equiv ==> ?r) f1), 1 subgoal(s)
+Debug: 1.1.1 : (Proper1 f1)
+Debug: 1.1.1: looking for (Proper1 f1) without backtracking
+Debug: 1.1.1.1: simple apply @n1proper0 on (Proper1 f1), 2 subgoal(s)
+Debug: 1.1.1.1.1 : (NProper f1)
+Debug: 1.1.1.1.1: looking for (NProper f1) without backtracking
+Debug: 1.1.1.1.1.1: exact f1_nproper on (NProper f1), 0 subgoal(s)
+Debug: 1.1.1.1.2 : (Nice1 f1)
+Debug: 1.1.1.1.2: looking for (Nice1 f1) without backtracking
+Debug: 1.1.1.1.2: no match for (Nice1 f1), 0 possibilities
+Debug: 1.1.1.2: simple apply @n23proper1 on (Proper1 f1), 3 subgoal(s)
+Debug: 1.1.1.2.1 : (NProper f1)
+Debug: 1.1.1.2.1: looking for (NProper f1) without backtracking
+Debug: 1.1.1.2.1.1: exact f1_nproper on (NProper f1), 0 subgoal(s)
+Debug: 1.1.1.2.2 : (Nice2 f1)
+Debug: 1.1.1.2.2: looking for (Nice2 f1) without backtracking
+Debug: 1.1.1.2.2.1: exact f1_nice2 on (Nice2 f1), 0 subgoal(s)
+Debug: 1.1.1.2.3 : (Nice3 f1)
+Debug: 1.1.1.2.3: looking for (Nice3 f1) without backtracking
+Debug: 1.1.1.2.3.1: exact f1_nice3 on (Nice3 f1), 0 subgoal(s)
+Debug:
+2: looking for (Proper (EQ ==> ?r ==> Basics.flip Basics.impl) equiv) with backtracking
+Debug: 2.1: simple apply @trans_co_eq_inv_impl_morphism on
+(Proper (EQ ==> ?r ==> Basics.flip Basics.impl) equiv), 1 subgoal(s)
+Debug: 2.1.1 : (Transitive equiv)
+Debug: 2.1.1: looking for (Transitive equiv) without backtracking
+Debug: 2.1.1.1: simple apply @equiv_transitive on (Transitive equiv), 0 subgoal(s)
+Debug: 3: looking for (ProperProxy eq (f1 x2)) without backtracking
+Debug:
+3.1: (*external*) (class_apply @eq_proper_proxy || class_apply @reflexive_proper_proxy) on
+(ProperProxy eq (f1 x2)), 0 subgoal(s)
